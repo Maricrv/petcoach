@@ -46,7 +46,7 @@ npm run dev
 3. Open the frontend at `http://localhost:5173` and submit the form to call
    `http://localhost:8000/next-action`.
 
-### Example request
+### Example requests
 
 ```bash
 curl -X POST http://127.0.0.1:8000/next-action \
