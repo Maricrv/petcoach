@@ -28,6 +28,7 @@ class NextActionResponse(BaseModel):
     reason: str
     next_check_in_minutes: int
     stage: str
+    scenario: str
 
 
 @app.get("/health")
@@ -47,6 +48,7 @@ def next_action(payload: NextActionRequest) -> NextActionResponse:
             reason="Young puppies need frequent potty breaks, especially every 1-2 hours.",
             next_check_in_minutes=30,
             stage=stage,
+            scenario="potty",
         )
 
     if payload.hours_since_last_meal >= 5 and not is_nighttime:
@@ -55,6 +57,7 @@ def next_action(payload: NextActionRequest) -> NextActionResponse:
             reason="Puppies typically need meals every 4-6 hours during the day.",
             next_check_in_minutes=60,
             stage=stage,
+            scenario="meal",
         )
 
     if is_nighttime:
@@ -63,6 +66,7 @@ def next_action(payload: NextActionRequest) -> NextActionResponse:
             reason="Nighttime is for rest; keep stimulation low and lights dim.",
             next_check_in_minutes=120,
             stage=stage,
+            scenario="overtired",
         )
 
     return NextActionResponse(
@@ -70,6 +74,7 @@ def next_action(payload: NextActionRequest) -> NextActionResponse:
         reason="If basic needs are met, a brief activity helps with bonding and learning.",
         next_check_in_minutes=45,
         stage=stage,
+        scenario="owner_overwhelmed",
     )
 
 
