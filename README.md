@@ -16,6 +16,36 @@ pip install -r backend/requirements.txt
 uvicorn backend.main:app --reload
 ```
 
+## Frontend (Vite + React)
+
+### Setup
+
+```bash
+cd frontend
+npm install
+```
+
+### Run
+
+```bash
+npm run dev
+```
+
+## Run frontend + backend together
+
+1. Terminal 1: start the backend API.
+   ```bash
+   uvicorn backend.main:app --reload
+   ```
+2. Terminal 2: start the Vite frontend.
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
+3. Open the frontend at `http://localhost:5173` and submit the form to call
+   `http://localhost:8000/next-action`.
+
 ### Example request
 
 ```bash
