@@ -1,38 +1,42 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 const TIME_OF_DAY_OPTIONS = [
-  { label: "Morning", value: "morning", time: "08:30" },
-  { label: "Day", value: "day", time: "13:00" },
-  { label: "Evening", value: "evening", time: "18:30" },
-  { label: "Night", value: "night", time: "23:00" },
+  { label: "Morning", value: "morning" },
+  { label: "Day", value: "day" },
+  { label: "Evening", value: "evening" },
+  { label: "Night", value: "night" },
 ];
 
-const stageFromAge = (weeks) => {
-  if (weeks <= 12) return "Early puppy";
-  if (weeks <= 24) return "Growing puppy";
-  if (weeks <= 52) return "Adolescent";
-  return "Adult";
-};
+const MOOD_OPTIONS = ["calm", "chaotic", "overwhelmed"];
+const SESSION_KEY = "petcoach_session_id";
 
 export default function App() {
   const [ageWeeks, setAgeWeeks] = useState(12);
   const [timeOfDay, setTimeOfDay] = useState("morning");
   const [lastActivityMinutes, setLastActivityMinutes] = useState(60);
+  const [mood, setMood] = useState("calm");
+  const [notes, setNotes] = useState("");
+  const [sessionId, setSessionId] = useState(() => localStorage.getItem(SESSION_KEY) || "");
   const [response, setResponse] = useState(null);
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
-
-  const localTime = useMemo(() => {
-    const match = TIME_OF_DAY_OPTIONS.find((option) => option.value === timeOfDay);
-    return match ? match.time : "12:00";
-  }, [timeOfDay]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setStatus("loading");
     setError("");
 
-    const hoursSinceLastActivity = Number(lastActivityMinutes) / 60;
+    const payload = {
+      weeks: Number(ageWeeks),
+      time_of_day: timeOfDay,
+      last_activity_minutes_ago: Number(lastActivityMinutes),
+      mood,
+      notes: notes.trim(),
+    };
+
+    if (sessionId) {
+      payload.session_id = sessionId;
+    }
 
     try {
       const res = await fetch("http://localhost:8000/next-action", {
@@ -40,12 +44,7 @@ export default function App() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          puppy_age_weeks: Number(ageWeeks),
-          hours_since_last_potty: hoursSinceLastActivity,
-          hours_since_last_meal: hoursSinceLastActivity,
-          local_time: localTime,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
@@ -53,16 +52,23 @@ export default function App() {
       }
 
       const data = await res.json();
-      setResponse({
-        ...data,
-        stage: data.stage ?? stageFromAge(Number(ageWeeks)),
-      });
+      setResponse(data);
+
+      if (data.session_id) {
+        localStorage.setItem(SESSION_KEY, data.session_id);
+        setSessionId(data.session_id);
+      }
     } catch (err) {
       setError(err.message || "Something went wrong.");
       setResponse(null);
     } finally {
       setStatus("idle");
     }
+  };
+
+  const handleResetSession = () => {
+    localStorage.removeItem(SESSION_KEY);
+    setSessionId("");
   };
 
   return (
@@ -112,12 +118,38 @@ export default function App() {
             />
           </label>
 
-          <button type="submit" disabled={status === "loading"}>
-            {status === "loading" ? "Checking..." : "Get next action"}
-          </button>
+          <label className="field">
+            How are things right now?
+            <select value={mood} onChange={(event) => setMood(event.target.value)}>
+              {MOOD_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="field">
+            Notes
+            <textarea
+              rows="4"
+              placeholder="Share anything that feels important right now..."
+              value={notes}
+              onChange={(event) => setNotes(event.target.value)}
+            />
+          </label>
+
+          <div className="actions">
+            <button type="submit" disabled={status === "loading"}>
+              {status === "loading" ? "Checking..." : "Get next action"}
+            </button>
+            <button className="reset" type="button" onClick={handleResetSession}>
+              Reset session
+            </button>
+          </div>
           <p className="helper">
-            We&apos;ll reuse this timing for potty and meal history to keep the demo
-            simple.
+            Session {sessionId ? "active" : "not set"} — we&apos;ll reuse it on future
+            check-ins.
           </p>
         </form>
 
@@ -126,6 +158,10 @@ export default function App() {
         {response ? (
           <section className="response">
             <h2>Recommendation</h2>
+            {response.scenario ? (
+              <span className="badge">{response.scenario}</span>
+            ) : null}
+            {response.reassurance ? <p className="reassurance">{response.reassurance}</p> : null}
             <dl>
               <div>
                 <dt>Action</dt>
@@ -136,12 +172,12 @@ export default function App() {
                 <dd>{response.reason}</dd>
               </div>
               <div>
-                <dt>Next check in</dt>
-                <dd>{response.next_check_in_minutes} minutes</dd>
+                <dt>What to avoid</dt>
+                <dd>{response.what_to_avoid}</dd>
               </div>
               <div>
-                <dt>Stage</dt>
-                <dd>{response.stage}</dd>
+                <dt>Next check in</dt>
+                <dd>{response.next_check_in_minutes} minutes</dd>
               </div>
             </dl>
           </section>

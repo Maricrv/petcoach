@@ -52,9 +52,10 @@ npm run dev
 curl -X POST http://127.0.0.1:8000/next-action \
   -H "Content-Type: application/json" \
   -d '{
-    "puppy_age_weeks": 12,
-    "hours_since_last_potty": 1.5,
-    "hours_since_last_meal": 4,
-    "local_time": "14:30"
+    "weeks": 12,
+    "time_of_day": "day",
+    "last_activity_minutes_ago": 90,
+    "mood": "calm",
+    "notes": "Just finished a walk and they are pacing."
   }'
 ```
