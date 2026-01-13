@@ -1,1 +1,2 @@
+# PetCoach backend entry point
 
