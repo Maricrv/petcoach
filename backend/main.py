@@ -6,6 +6,7 @@ from uuid import uuid4
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+from typing import Literal
 
 app = FastAPI(title="PetCoach API")
 app.add_middleware(
@@ -30,6 +31,8 @@ class NextActionRequest(BaseModel):
 class NextActionResponse(BaseModel):
     action: str
     reason: str
+    what_to_avoid: str
+    reassurance: str
     next_check_in_minutes: int
     stage: str
     session_id: str
@@ -46,8 +49,6 @@ SESSION_TTL = timedelta(minutes=60)
 
 @app.post("/next-action", response_model=NextActionResponse)
 def next_action(payload: NextActionRequest) -> NextActionResponse:
-    current_time = time.fromisoformat(payload.local_time)
-    is_nighttime = current_time.hour >= 22 or current_time.hour < 6
     stage = _stage_from_age(payload.puppy_age_weeks)
     session_id = payload.session_id or str(uuid4())
 
