@@ -52,22 +52,29 @@ npm run dev
 curl -X POST http://127.0.0.1:8000/next-action \
   -H "Content-Type: application/json" \
   -d '{
-    "puppy_age_weeks": 12,
-    "time_of_day": "evening",
-    "last_activity_minutes_ago": 10,
-    "notes": "Zooming after dinner",
-    "mood": "calm"
+    "weeks": 12,
+    "time_of_day": "day",
+    "last_activity_minutes_ago": 90,
+    "mood": "calm",
+    "notes": "Just finished a walk and they are pacing."
   }'
 ```
+
+### Session IDs (lightweight memory)
+
+The `/next-action` endpoint accepts an optional `session_id`. If you omit it, the
+API generates one and returns it in the response. Send the same `session_id` on
+follow-up requests so the backend can recognize repeated scenarios within about
+an hour and offer a slightly different “Plan B” action.
 
 ```bash
 curl -X POST http://127.0.0.1:8000/next-action \
   -H "Content-Type: application/json" \
   -d '{
-    "puppy_age_weeks": 14,
-    "time_of_day": "afternoon",
-    "last_activity_minutes_ago": 30,
-    "notes": "Feeling overwhelmed and frustrated with the barking",
-    "mood": "overwhelmed"
+    "puppy_age_weeks": 12,
+    "hours_since_last_potty": 1.5,
+    "hours_since_last_meal": 4,
+    "local_time": "14:30",
+    "session_id": "your-session-id-from-the-last-response"
   }'
 ```
