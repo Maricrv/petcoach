@@ -35,7 +35,7 @@ class NextActionResponse(BaseModel):
     reassurance: str
     next_check_in_minutes: int
     stage: str
-    session_id: str
+    scenario: str
 
 
 @app.get("/health")
@@ -50,29 +50,40 @@ SESSION_TTL = timedelta(minutes=60)
 @app.post("/next-action", response_model=NextActionResponse)
 def next_action(payload: NextActionRequest) -> NextActionResponse:
     stage = _stage_from_age(payload.puppy_age_weeks)
-    session_id = payload.session_id or str(uuid4())
 
-    scenario = _scenario_from_inputs(
-        age_weeks=payload.puppy_age_weeks,
-        hours_since_last_potty=payload.hours_since_last_potty,
-        hours_since_last_meal=payload.hours_since_last_meal,
-        is_nighttime=is_nighttime,
-    )
-    use_plan_b = _should_use_plan_b(session_id, scenario)
-    action, reason, next_check_in_minutes = _action_for_scenario(
-        scenario, use_plan_b=use_plan_b
-    )
-    SESSION_MEMORY[session_id] = {
-        "scenario": scenario,
-        "timestamp": datetime.now(timezone.utc),
-    }
+    if payload.puppy_age_weeks < 16 and payload.hours_since_last_potty >= 1:
+        return NextActionResponse(
+            action="Take your puppy outside for a potty break.",
+            reason="Young puppies need frequent potty breaks, especially every 1-2 hours.",
+            next_check_in_minutes=30,
+            stage=stage,
+            scenario="potty",
+        )
+
+    if payload.hours_since_last_meal >= 5 and not is_nighttime:
+        return NextActionResponse(
+            action="Offer a meal or snack.",
+            reason="Puppies typically need meals every 4-6 hours during the day.",
+            next_check_in_minutes=60,
+            stage=stage,
+            scenario="meal",
+        )
+
+    if is_nighttime:
+        return NextActionResponse(
+            action="Settle your puppy for sleep in their crate.",
+            reason="Nighttime is for rest; keep stimulation low and lights dim.",
+            next_check_in_minutes=120,
+            stage=stage,
+            scenario="overtired",
+        )
 
     return NextActionResponse(
         action=action,
         reason=reason,
         next_check_in_minutes=next_check_in_minutes,
         stage=stage,
-        session_id=session_id,
+        scenario="owner_overwhelmed",
     )
 
 
